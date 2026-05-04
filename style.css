@@ -324,3 +324,39 @@ a:hover {
   font-size: 13px;
   text-align: center;
 }
+
+.prayers {
+  margin: 0 18px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+}
+
+.prayers__title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 8px;
+}
+
+.prayers__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.prayers__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.prayers__row span:last-child {
+  color: rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}

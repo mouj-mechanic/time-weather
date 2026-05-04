@@ -24,6 +24,9 @@ const AVAILABLE_CITIES = [
 const WEATHER_CACHE = new Map(); // key: cityName -> { data, fetchedAt }
 const WEATHER_TTL_MS = 10 * 60 * 1000;
 
+const PRAYER_CACHE = new Map(); // key: yyyy-mm-dd -> { timings, fetchedAt }
+const PRAYER_TTL_MS = 12 * 60 * 60 * 1000;
+
 function $(root, selector) {
   const el = root.querySelector(selector);
   if (!el) throw new Error(`Missing element: ${selector}`);
@@ -73,6 +76,74 @@ function safeText(v, fallback = "—") {
   if (v === null || v === undefined) return fallback;
   const s = String(v).trim();
   return s.length ? s : fallback;
+}
+
+function yyyyMmDdInTz(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (t) => parts.find((p) => p.type === t)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+async function fetchTunisPrayerTimes(yyyyMmDd) {
+  const cached = PRAYER_CACHE.get(yyyyMmDd);
+  const now = Date.now();
+  if (cached && now - cached.fetchedAt < PRAYER_TTL_MS) return cached.timings;
+
+  // AlAdhan API (no key): timings by city
+  const url =
+    "https://api.aladhan.com/v1/timingsByCity/" +
+    encodeURIComponent(yyyyMmDd) +
+    "?" +
+    new URLSearchParams({
+      city: "Tunis",
+      country: "Tunisia",
+      method: "3", // Muslim World League
+    }).toString();
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Prayer times failed (${res.status})`);
+  const json = await res.json();
+  const t = json?.data?.timings;
+  if (!t) throw new Error("Prayer times missing timings");
+
+  const timings = {
+    Fajr: t.Fajr,
+    Dhuhr: t.Dhuhr,
+    Asr: t.Asr,
+    Maghrib: t.Maghrib,
+    Isha: t.Isha,
+  };
+
+  PRAYER_CACHE.set(yyyyMmDd, { timings, fetchedAt: now });
+  return timings;
+}
+
+async function renderTunisPrayerTimes() {
+  const tunisCard = document.querySelector('.card[data-city="Tunis"]');
+  if (!tunisCard) return;
+
+  const tz = tunisCard.getAttribute("data-tz") || "Africa/Tunis";
+  const today = yyyyMmDdInTz(new Date(), tz);
+
+  try {
+    const timings = await fetchTunisPrayerTimes(today);
+    const set = (role, value) => {
+      const el = tunisCard.querySelector(`[data-role="${role}"]`);
+      if (el) el.textContent = safeText(value, "—");
+    };
+    set("p-fajr", timings.Fajr);
+    set("p-dhuhr", timings.Dhuhr);
+    set("p-asr", timings.Asr);
+    set("p-maghrib", timings.Maghrib);
+    set("p-isha", timings.Isha);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function weatherCodeToText(code) {
@@ -349,5 +420,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setupCustomCards();
   startTimeTicker();
   startWeatherRefresher();
+  renderTunisPrayerTimes();
+  setInterval(renderTunisPrayerTimes, 30 * 60 * 1000);
 });
 
