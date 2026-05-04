@@ -24,8 +24,10 @@ const AVAILABLE_CITIES = [
 const WEATHER_CACHE = new Map(); // key: cityName -> { data, fetchedAt }
 const WEATHER_TTL_MS = 10 * 60 * 1000;
 
-const PRAYER_CACHE = new Map(); // key: dd-mm-yyyy|city|country -> { timings, fetchedAt }
+const PRAYER_CACHE = new Map(); // key: dd-mm-yyyy|lat|lon|tz -> { timings, fetchedAt }
 const PRAYER_TTL_MS = 12 * 60 * 60 * 1000;
+const GEO_CACHE = new Map(); // key: cityName -> { latitude, longitude, fetchedAt }
+const GEO_TTL_MS = 24 * 60 * 60 * 1000;
 
 function $(root, selector) {
   const el = root.querySelector(selector);
@@ -90,20 +92,33 @@ function ddMmYyyyInTz(date, timeZone) {
   return `${get("day")}-${get("month")}-${get("year")}`;
 }
 
-async function fetchPrayerTimesByCity({ ddMmYyyy, city, country }) {
-  const cacheKey = `${ddMmYyyy}|${city}|${country}`;
+async function getCityCoords(city) {
+  const cached = GEO_CACHE.get(city.name);
+  const now = Date.now();
+  if (cached && now - cached.fetchedAt < GEO_TTL_MS) {
+    return { latitude: cached.latitude, longitude: cached.longitude };
+  }
+
+  const coords = await geocodeCity(city.query);
+  GEO_CACHE.set(city.name, { ...coords, fetchedAt: now });
+  return coords;
+}
+
+async function fetchPrayerTimesByCoords({ ddMmYyyy, latitude, longitude, timeZone }) {
+  const cacheKey = `${ddMmYyyy}|${latitude}|${longitude}|${timeZone}`;
   const cached = PRAYER_CACHE.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.fetchedAt < PRAYER_TTL_MS) return cached.timings;
 
-  // AlAdhan API (no key): timings by city
+  // AlAdhan API (no key): timings by coordinates (more reliable than city/country strings)
   const url =
-    "https://api.aladhan.com/v1/timingsByCity/" +
+    "https://api.aladhan.com/v1/timings/" +
     encodeURIComponent(ddMmYyyy) +
     "?" +
     new URLSearchParams({
-      city,
-      country,
+      latitude: String(latitude),
+      longitude: String(longitude),
+      timezone: timeZone,
       method: "3", // Muslim World League
     }).toString();
 
@@ -135,15 +150,17 @@ async function renderPrayerTimesForCard(card) {
 
   const { name, tz } = cardCity(card);
   const city = getCityMap().get(name);
-  if (!city?.country) return;
+  if (!city) return;
 
   const today = ddMmYyyyInTz(new Date(), tz);
 
   try {
-    const timings = await fetchPrayerTimesByCity({
+    const coords = await getCityCoords(city);
+    const timings = await fetchPrayerTimesByCoords({
       ddMmYyyy: today,
-      city: city.name,
-      country: city.country,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      timeZone: tz,
     });
     setPrayerRow(card, "p-fajr", timings.Fajr);
     setPrayerRow(card, "p-dhuhr", timings.Dhuhr);
