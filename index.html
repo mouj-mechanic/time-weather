@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Time + Weather</title>
+    <meta
+      name="description"
+      content="Check local time and live weather for Sofia, Paris, Athens, and Tunis."
+    />
+    <link rel="preconnect" href="https://api.open-meteo.com" />
+    <link rel="preconnect" href="https://geocoding-api.open-meteo.com" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__title">Bonjour Si Moujib</div>
+        <div class="brand__subtitle">Sofia • Paris • Athens • Tunis</div>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </header>
+
+    <main class="container">
+      <section class="grid" aria-label="City time and weather dashboard">
+        <article class="card" data-city="Sofia" data-tz="Europe/Sofia">
+          <div class="card__header">
+            <h2 class="card__title">Sofia</h2>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" data-city="Paris" data-tz="Europe/Paris">
+          <div class="card__header">
+            <h2 class="card__title">Paris</h2>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" data-city="Athens" data-tz="Europe/Athens">
+          <div class="card__header">
+            <h2 class="card__title">Athens</h2>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" data-city="Tunis" data-tz="Africa/Tunis">
+          <div class="card__header">
+            <h2 class="card__title">Tunis</h2>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card--custom" data-custom="1" data-city="London" data-tz="Europe/London">
+          <div class="card__header">
+            <div class="card__headleft">
+              <h2 class="card__title" data-role="title">London</h2>
+              <select class="city-select" data-role="city-select" aria-label="Choose a city for tile 1"></select>
+            </div>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card--custom" data-custom="2" data-city="New York" data-tz="America/New_York">
+          <div class="card__header">
+            <div class="card__headleft">
+              <h2 class="card__title" data-role="title">New York</h2>
+              <select class="city-select" data-role="city-select" aria-label="Choose a city for tile 2"></select>
+            </div>
+            <div class="chip" data-role="updated">—</div>
+          </div>
+
+          <div class="card__main">
+            <div class="time">
+              <div class="time__clock" data-role="time">--:--</div>
+              <div class="time__date" data-role="date">—</div>
+            </div>
+            <div class="wx">
+              <div class="wx__icon" data-role="icon" aria-hidden="true"></div>
+              <div class="wx__meta">
+                <div class="wx__temp" data-role="temp">—</div>
+                <div class="wx__desc" data-role="desc">Loading…</div>
+                <div class="wx__extra">
+                  <div class="wx__row">
+                    <span class="wx__label">Wind</span>
+                    <span class="wx__value" data-role="wind">—</span>
+                  </div>
+                  <div class="wx__row">
+                    <span class="wx__label">Humidity</span>
+                    <span class="wx__value" data-role="humidity">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        Data from <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open‑Meteo</a>.
+      </footer>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
