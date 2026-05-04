@@ -1,4 +1,0 @@
-Initial commit: time + weather dashboard
-
-Publish a GitHub Pages-ready static site showing local time and live weather with colorful tiles and selectable city dropdowns.
-
