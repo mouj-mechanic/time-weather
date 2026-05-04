@@ -78,7 +78,7 @@ function safeText(v, fallback = "—") {
   return s.length ? s : fallback;
 }
 
-function yyyyMmDdInTz(date, timeZone) {
+function ddMmYyyyInTz(date, timeZone) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -86,18 +86,19 @@ function yyyyMmDdInTz(date, timeZone) {
     day: "2-digit",
   }).formatToParts(date);
   const get = (t) => parts.find((p) => p.type === t)?.value;
-  return `${get("year")}-${get("month")}-${get("day")}`;
+  // AlAdhan expects DD-MM-YYYY
+  return `${get("day")}-${get("month")}-${get("year")}`;
 }
 
-async function fetchTunisPrayerTimes(yyyyMmDd) {
-  const cached = PRAYER_CACHE.get(yyyyMmDd);
+async function fetchTunisPrayerTimes(ddMmYyyy) {
+  const cached = PRAYER_CACHE.get(ddMmYyyy);
   const now = Date.now();
   if (cached && now - cached.fetchedAt < PRAYER_TTL_MS) return cached.timings;
 
   // AlAdhan API (no key): timings by city
   const url =
     "https://api.aladhan.com/v1/timingsByCity/" +
-    encodeURIComponent(yyyyMmDd) +
+    encodeURIComponent(ddMmYyyy) +
     "?" +
     new URLSearchParams({
       city: "Tunis",
@@ -119,7 +120,7 @@ async function fetchTunisPrayerTimes(yyyyMmDd) {
     Isha: t.Isha,
   };
 
-  PRAYER_CACHE.set(yyyyMmDd, { timings, fetchedAt: now });
+  PRAYER_CACHE.set(ddMmYyyy, { timings, fetchedAt: now });
   return timings;
 }
 
@@ -128,7 +129,7 @@ async function renderTunisPrayerTimes() {
   if (!tunisCard) return;
 
   const tz = tunisCard.getAttribute("data-tz") || "Africa/Tunis";
-  const today = yyyyMmDdInTz(new Date(), tz);
+  const today = ddMmYyyyInTz(new Date(), tz);
 
   try {
     const timings = await fetchTunisPrayerTimes(today);
