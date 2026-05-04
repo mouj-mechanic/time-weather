@@ -1,30 +1,30 @@
 const AVAILABLE_CITIES = [
-  { name: "Sofia", tz: "Europe/Sofia", query: "Sofia, Bulgaria" },
-  { name: "Paris", tz: "Europe/Paris", query: "Paris, France" },
-  { name: "Athens", tz: "Europe/Athens", query: "Athens, Greece" },
-  { name: "Tunis", tz: "Africa/Tunis", query: "Tunis, Tunisia" },
-  { name: "London", tz: "Europe/London", query: "London, United Kingdom" },
-  { name: "New York", tz: "America/New_York", query: "New York, United States" },
-  { name: "Geneva", tz: "Europe/Zurich", query: "Geneva, Switzerland" },
-  { name: "New Delhi", tz: "Asia/Kolkata", query: "New Delhi, India" },
-  { name: "Tokyo", tz: "Asia/Tokyo", query: "Tokyo, Japan" },
-  { name: "Dubai", tz: "Asia/Dubai", query: "Dubai, United Arab Emirates" },
-  { name: "Casablanca", tz: "Africa/Casablanca", query: "Casablanca, Morocco" },
-  { name: "Algiers", tz: "Africa/Algiers", query: "Algiers, Algeria" },
-  { name: "Rome", tz: "Europe/Rome", query: "Rome, Italy" },
-  { name: "Berlin", tz: "Europe/Berlin", query: "Berlin, Germany" },
-  { name: "Madrid", tz: "Europe/Madrid", query: "Madrid, Spain" },
-  { name: "Istanbul", tz: "Europe/Istanbul", query: "Istanbul, Turkey" },
-  { name: "Cairo", tz: "Africa/Cairo", query: "Cairo, Egypt" },
-  { name: "Riyadh", tz: "Asia/Riyadh", query: "Riyadh, Saudi Arabia" },
-  { name: "Montreal", tz: "America/Toronto", query: "Montreal, Canada" },
-  { name: "Los Angeles", tz: "America/Los_Angeles", query: "Los Angeles, United States" },
+  { name: "Sofia", tz: "Europe/Sofia", country: "Bulgaria", query: "Sofia, Bulgaria" },
+  { name: "Paris", tz: "Europe/Paris", country: "France", query: "Paris, France" },
+  { name: "Athens", tz: "Europe/Athens", country: "Greece", query: "Athens, Greece" },
+  { name: "Tunis", tz: "Africa/Tunis", country: "Tunisia", query: "Tunis, Tunisia" },
+  { name: "London", tz: "Europe/London", country: "United Kingdom", query: "London, United Kingdom" },
+  { name: "New York", tz: "America/New_York", country: "United States", query: "New York, United States" },
+  { name: "Geneva", tz: "Europe/Zurich", country: "Switzerland", query: "Geneva, Switzerland" },
+  { name: "New Delhi", tz: "Asia/Kolkata", country: "India", query: "New Delhi, India" },
+  { name: "Tokyo", tz: "Asia/Tokyo", country: "Japan", query: "Tokyo, Japan" },
+  { name: "Dubai", tz: "Asia/Dubai", country: "United Arab Emirates", query: "Dubai, United Arab Emirates" },
+  { name: "Casablanca", tz: "Africa/Casablanca", country: "Morocco", query: "Casablanca, Morocco" },
+  { name: "Algiers", tz: "Africa/Algiers", country: "Algeria", query: "Algiers, Algeria" },
+  { name: "Rome", tz: "Europe/Rome", country: "Italy", query: "Rome, Italy" },
+  { name: "Berlin", tz: "Europe/Berlin", country: "Germany", query: "Berlin, Germany" },
+  { name: "Madrid", tz: "Europe/Madrid", country: "Spain", query: "Madrid, Spain" },
+  { name: "Istanbul", tz: "Europe/Istanbul", country: "Turkey", query: "Istanbul, Turkey" },
+  { name: "Cairo", tz: "Africa/Cairo", country: "Egypt", query: "Cairo, Egypt" },
+  { name: "Riyadh", tz: "Asia/Riyadh", country: "Saudi Arabia", query: "Riyadh, Saudi Arabia" },
+  { name: "Montreal", tz: "America/Toronto", country: "Canada", query: "Montreal, Canada" },
+  { name: "Los Angeles", tz: "America/Los_Angeles", country: "United States", query: "Los Angeles, United States" },
 ];
 
 const WEATHER_CACHE = new Map(); // key: cityName -> { data, fetchedAt }
 const WEATHER_TTL_MS = 10 * 60 * 1000;
 
-const PRAYER_CACHE = new Map(); // key: yyyy-mm-dd -> { timings, fetchedAt }
+const PRAYER_CACHE = new Map(); // key: dd-mm-yyyy|city|country -> { timings, fetchedAt }
 const PRAYER_TTL_MS = 12 * 60 * 60 * 1000;
 
 function $(root, selector) {
@@ -90,8 +90,9 @@ function ddMmYyyyInTz(date, timeZone) {
   return `${get("day")}-${get("month")}-${get("year")}`;
 }
 
-async function fetchTunisPrayerTimes(ddMmYyyy) {
-  const cached = PRAYER_CACHE.get(ddMmYyyy);
+async function fetchPrayerTimesByCity({ ddMmYyyy, city, country }) {
+  const cacheKey = `${ddMmYyyy}|${city}|${country}`;
+  const cached = PRAYER_CACHE.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.fetchedAt < PRAYER_TTL_MS) return cached.timings;
 
@@ -101,8 +102,8 @@ async function fetchTunisPrayerTimes(ddMmYyyy) {
     encodeURIComponent(ddMmYyyy) +
     "?" +
     new URLSearchParams({
-      city: "Tunis",
-      country: "Tunisia",
+      city,
+      country,
       method: "3", // Muslim World League
     }).toString();
 
@@ -120,31 +121,43 @@ async function fetchTunisPrayerTimes(ddMmYyyy) {
     Isha: t.Isha,
   };
 
-  PRAYER_CACHE.set(ddMmYyyy, { timings, fetchedAt: now });
+  PRAYER_CACHE.set(cacheKey, { timings, fetchedAt: now });
   return timings;
 }
 
-async function renderTunisPrayerTimes() {
-  const tunisCard = document.querySelector('.card[data-city="Tunis"]');
-  if (!tunisCard) return;
+function setPrayerRow(card, role, value) {
+  const el = card.querySelector(`[data-role="${role}"]`);
+  if (el) el.textContent = safeText(value, "—");
+}
 
-  const tz = tunisCard.getAttribute("data-tz") || "Africa/Tunis";
+async function renderPrayerTimesForCard(card) {
+  if (!card.querySelector('[data-role="prayers"]')) return;
+
+  const { name, tz } = cardCity(card);
+  const city = getCityMap().get(name);
+  if (!city?.country) return;
+
   const today = ddMmYyyyInTz(new Date(), tz);
 
   try {
-    const timings = await fetchTunisPrayerTimes(today);
-    const set = (role, value) => {
-      const el = tunisCard.querySelector(`[data-role="${role}"]`);
-      if (el) el.textContent = safeText(value, "—");
-    };
-    set("p-fajr", timings.Fajr);
-    set("p-dhuhr", timings.Dhuhr);
-    set("p-asr", timings.Asr);
-    set("p-maghrib", timings.Maghrib);
-    set("p-isha", timings.Isha);
+    const timings = await fetchPrayerTimesByCity({
+      ddMmYyyy: today,
+      city: city.name,
+      country: city.country,
+    });
+    setPrayerRow(card, "p-fajr", timings.Fajr);
+    setPrayerRow(card, "p-dhuhr", timings.Dhuhr);
+    setPrayerRow(card, "p-asr", timings.Asr);
+    setPrayerRow(card, "p-maghrib", timings.Maghrib);
+    setPrayerRow(card, "p-isha", timings.Isha);
   } catch (e) {
     console.error(e);
   }
+}
+
+async function refreshAllPrayerTimes() {
+  const cards = getCards();
+  await Promise.all(cards.map((c) => renderPrayerTimesForCard(c)));
 }
 
 function weatherCodeToText(code) {
@@ -396,6 +409,7 @@ function setupCustomCards() {
       card.setAttribute("data-tz", c.tz);
       titleEl.textContent = c.name;
       await refreshWeatherForCard(card);
+      await renderPrayerTimesForCard(card);
     });
   }
 }
@@ -421,7 +435,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setupCustomCards();
   startTimeTicker();
   startWeatherRefresher();
-  renderTunisPrayerTimes();
-  setInterval(renderTunisPrayerTimes, 30 * 60 * 1000);
+  refreshAllPrayerTimes();
+  setInterval(refreshAllPrayerTimes, 30 * 60 * 1000);
 });
 
